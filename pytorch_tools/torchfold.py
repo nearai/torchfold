@@ -31,6 +31,12 @@ class Fold(object):
             self.batch = False
             return self
 
+        def get(self, values):
+            if self.split_idx >= 0:
+                return values[self.step][self.op][self.split_idx][self.index]
+            else:
+                return values[self.step][self.op][self.index]
+
         def __repr__(self):
             return "[%d:%d]%s" % (
                 self.step, self.index, self.op)
@@ -60,19 +66,20 @@ class Fold(object):
             if isinstance(arg[0], Fold.Node):
                 if arg[0].batch:
                     for x in arg:
-                        if x.split_idx >= 0:
-                            r.append(values[x.step][x.op][x.split_idx][x.index])
-                        else:
-                            r.append(values[x.step][x.op][x.index])
+                        r.append(x.get(values))
                     res.append(torch.cat(r, 0))
                 else:
+                    for i in range(2, len(arg)):
+                        if arg[i] != arg[0]:
+                            raise ValueError("Can not use more then one of nobatch argument, got: %s." % str(arg))
                     x = arg[0]
-                    if x.split_idx >= 0:
-                        res.append(values[x.step][x.op][x.split_idx][x.index])
-                    else:
-                        res.append(values[x.step][x.op][x.index])
+                    res.append(x.get(values))
             else:
-                res.append(Variable(torch.LongTensor(arg), volatile=self.volatile))
+                try:
+                    res.append(Variable(torch.LongTensor(arg), volatile=self.volatile))
+                except:
+                    print("Constructing LongTensor from %s" % arg)
+                    raise
         return res
 
     def apply(self, nn, nodes):
@@ -82,12 +89,12 @@ class Fold(object):
             values[step] = {}
             for op in self.steps[step]:
                 func = getattr(nn, op)
-                # print(op)
                 try:
                     batched_args = self._batch_args(
                         zip(*self.steps[step][op]), values)
                 except Exception:
-                    print("Executing node %s[%d]" % (op, step))
+                    print("Error while executing node %s[%d] with args: %s" % (
+                        op, step, self.steps[step][op]))
                     raise
                 if batched_args:
                     arg_size = batched_args[0].size()[0]
@@ -106,6 +113,6 @@ class Fold(object):
             print("Retrieving %s" % nodes)
             for lst in nodes:
                 if isinstance(lst[0], Fold.Node):
-                    print(', '.join([str(values[x.step][x.op][x.index].size()) for x in lst]))
+                    print(', '.join([str(x.get(values).size()) for x in lst]))
             raise
 
