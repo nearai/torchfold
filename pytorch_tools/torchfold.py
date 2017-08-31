@@ -116,3 +116,47 @@ class Fold(object):
                     print(', '.join([str(x.get(values).size()) for x in lst]))
             raise
 
+
+class Unfold(object):
+    """Replacement of Fold for debugging, where it does computation right away."""
+
+    class Node(object):
+
+        def __init__(self, tensor):
+            self.tensor = tensor
+
+        def __repr__(self):
+            return str(self.tensor)
+
+        def nobatch(self):
+            return self
+
+        def split(self, num):
+            return [Unfold.Node(self.tensor[i]) for i in range(num)]
+
+    def __init__(self, nn, volatile=False):
+        self.nn = nn
+        self.volatile = volatile
+
+    def _arg(self, arg):
+        if isinstance(arg, Unfold.Node):
+            return arg.tensor
+        elif isinstance(arg, int):
+            return Variable(torch.LongTensor([arg]), volatile=self.volatile)
+        else:
+            return arg
+
+    def add(self, op, *args):
+        values = []
+        for arg in args:
+            values.append(self._arg(arg))
+        res = getattr(self.nn, op)(*values)
+        return Unfold.Node(res)
+
+    def apply(self, nn, nodes):
+        if nn != self.nn:
+            raise ValueError("Expected that nn argument passed to constructor and passed to apply would match.")
+        result = []
+        for n in nodes:
+            result.append(torch.cat([self._arg(a) for a in n]))
+        return result
