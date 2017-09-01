@@ -41,12 +41,17 @@ class Fold(object):
             return "[%d:%d]%s" % (
                 self.step, self.index, self.op)
 
-    def __init__(self, volatile=False):
+    def __init__(self, volatile=False, cuda=False):
         self.steps = collections.defaultdict(
             lambda: collections.defaultdict(list))
         self.cached_nodes = collections.defaultdict(dict)
         self.total_nodes = 0
         self.volatile = volatile
+        self._cuda = cuda
+
+    def cuda(self):
+        self._cuda = True
+        return self
 
     def add(self, op, *args):
         """Add op to the fold."""
@@ -76,7 +81,11 @@ class Fold(object):
                     res.append(x.get(values))
             else:
                 try:
-                    res.append(Variable(torch.LongTensor(arg), volatile=self.volatile))
+                    if self._cuda:
+                        var = Variable(torch.cuda.LongTensor(arg), volatile=self.volatile)
+                    else:
+                        var = Variable(torch.LongTensor(arg), volatile=self.volatile)
+                    res.append(var)
                 except:
                     print("Constructing LongTensor from %s" % arg)
                     raise
@@ -134,15 +143,23 @@ class Unfold(object):
         def split(self, num):
             return [Unfold.Node(self.tensor[i]) for i in range(num)]
 
-    def __init__(self, nn, volatile=False):
+    def __init__(self, nn, volatile=False, cuda=False):
         self.nn = nn
         self.volatile = volatile
+        self._cuda = cuda
+
+    def cuda(self):
+        self._cuda = True
+        return self
 
     def _arg(self, arg):
         if isinstance(arg, Unfold.Node):
             return arg.tensor
         elif isinstance(arg, int):
-            return Variable(torch.LongTensor([arg]), volatile=self.volatile)
+            if self._cuda:
+                return Variable(torch.cuda.LongTensor([arg]), volatile=self.volatile)
+            else:
+                return Variable(torch.LongTensor([arg]), volatile=self.volatile)
         else:
             return arg
 
