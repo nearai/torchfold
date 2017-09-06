@@ -25,7 +25,7 @@ class Fold(object):
                 nodes.append(Fold.Node(
                     self.op, self.step, self.index, *self.args))
                 nodes[-1].split_idx = idx
-            return nodes
+            return tuple(nodes)
 
         def nobatch(self):
             self.batch = False
@@ -87,7 +87,7 @@ class Fold(object):
                         var = Variable(torch.LongTensor(arg), volatile=self.volatile)
                     res.append(var)
                 except:
-                    print("Constructing LongTensor from %s" % arg)
+                    print("Constructing LongTensor from %s" % str(arg))
                     raise
         return res
 
