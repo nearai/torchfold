@@ -56,6 +56,10 @@ class Fold(object):
     def add(self, op, *args):
         """Add op to the fold."""
         self.total_nodes += 1
+        if not all([isinstance(arg, (
+            Fold.Node, int, torch.Tensor, Variable)) for arg in args]):
+            raise ValueError(
+                "All args should be Tensor, Variable, int or Node, got: %s" % str(args))
         if args not in self.cached_nodes[op]:
             step = max([0] + [arg.step + 1 for arg in args
                               if isinstance(arg, Fold.Node)])
@@ -79,6 +83,8 @@ class Fold(object):
                             raise ValueError("Can not use more then one of nobatch argument, got: %s." % str(arg))
                     x = arg[0]
                     res.append(x.get(values))
+            elif isinstance(arg[0], Variable):
+                res.append(torch.cat(arg, 0))
             else:
                 try:
                     if self._cuda:
@@ -124,6 +130,25 @@ class Fold(object):
                 if isinstance(lst[0], Fold.Node):
                     print(', '.join([str(x.get(values).size()) for x in lst]))
             raise
+
+    def __str__(self):
+        result = ''
+        for step in sorted(self.steps.keys()):
+            result += '%d step:\n' % step
+            for op in self.steps[step]:
+                first_el = ''
+                for arg in self.steps[step][op][0]:
+                    if first_el: first_el += ', '
+                    if isinstance(arg, (torch.Tensor, Variable)):
+                        first_el += str(arg.size())
+                    else:
+                        first_el += str(arg)
+                result += '\t%s = %d x (%s)\n' % (
+                    op, len(self.steps[step][op]), first_el)
+        return result
+
+    def __repr__(self):
+        return str(self)
 
 
 class Unfold(object):
