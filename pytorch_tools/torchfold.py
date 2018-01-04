@@ -57,7 +57,7 @@ class Fold(object):
         """Add op to the fold."""
         self.total_nodes += 1
         if not all([isinstance(arg, (
-            Fold.Node, int, torch.Tensor, Variable)) for arg in args]):
+            Fold.Node, int, torch.tensor._TensorBase, Variable)) for arg in args]):
             raise ValueError(
                 "All args should be Tensor, Variable, int or Node, got: %s" % str(args))
         if args not in self.cached_nodes[op]:
@@ -109,7 +109,7 @@ class Fold(object):
                         zip(*self.steps[step][op]), values)
                 except Exception:
                     print("Error while executing node %s[%d] with args: %s" % (
-                        op, step, self.steps[step][op]))
+                        op, step, self.steps[step][op][0]))
                     raise
                 if batched_args:
                     arg_size = batched_args[0].size()[0]
