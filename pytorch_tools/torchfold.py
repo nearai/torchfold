@@ -83,7 +83,7 @@ class Fold(object):
                             raise ValueError("Can not use more then one of nobatch argument, got: %s." % str(arg))
                     x = arg[0]
                     res.append(x.get(values))
-            elif isinstance(arg[0], Variable):
+            elif isinstance(arg[0], (torch.tensor._TensorBase, Variable)):
                 res.append(torch.cat(arg, 0))
             else:
                 try:
