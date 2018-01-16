@@ -52,14 +52,17 @@ class Fold(object):
 
         def try_get_batched(self, nodes):
             all_are_nodes = all(isinstance(n, Fold.Node) for n in nodes)
-            if not all_are_nodes:
-                return None
-            same_split_index = len(set(n.split_idx for n in nodes)) == 1
-            same_step = len(set(n.step for n in nodes)) == 1
-            same_op = len(set(n.op for n in nodes)) == 1
-            indices_are_ordered = all(nodes[i].index < nodes[i + 1].index for i in xrange(len(nodes) - 1))
             num_nodes_is_equal = len(nodes) == self.batch_size
-            if not (same_split_index and same_step and same_op and indices_are_ordered and num_nodes_is_equal):
+            if not all_are_nodes or not num_nodes_is_equal:
+                return None
+
+            valid_node_sequence = all(
+                nodes[i].index < nodes[i + 1].index  # Indices are ordered
+                and nodes[i].split_idx == nodes[i + 1].split_idx  # Same split index
+                and nodes[i].step == nodes[i + 1].step  # Same step
+                and nodes[i].op == nodes[i + 1].op  # Same op
+                for i in xrange(len(nodes) - 1))
+            if not valid_node_sequence:
                 return None
 
             if nodes[0].split_idx == -1 and not isinstance(self.result, tuple):
