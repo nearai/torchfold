@@ -7,7 +7,6 @@ from torch import optim
 import torch.nn.functional as F
 
 
-
 class Fold(object):
 
     class Node(object):
@@ -33,10 +32,7 @@ class Fold(object):
             return self
 
         def get(self, values):
-            if self.split_idx >= 0:
-                return values[self.step][self.op].get(self.index, self.split_idx)
-            else:
-                return values[self.step][self.op].get(self.index)
+            return values[self.step][self.op].get(self.index, self.split_idx)
 
         def __repr__(self):
             return "[%d:%d]%s" % (
