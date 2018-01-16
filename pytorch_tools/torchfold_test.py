@@ -38,7 +38,6 @@ class TestEncoder(nn.Module):
 class TorchFoldTest(unittest.TestCase):
 
     def test_rnn(self):
-        return
         f = torchfold.Fold()
         v1, _ = f.add('value2', 1).split(2)
         v2, _ = f.add('value2', 2).split(2)
@@ -52,7 +51,6 @@ class TorchFoldTest(unittest.TestCase):
         self.assertEqual(enc[0].size(), (1, 10))
 
     def test_nobatch(self):
-        return
         f = torchfold.Fold()
         v = []
         for i in range(15):
