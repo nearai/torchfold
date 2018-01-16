@@ -7,6 +7,7 @@ from torch import optim
 import torch.nn.functional as F
 
 
+
 class Fold(object):
 
     class Node(object):
@@ -33,13 +34,52 @@ class Fold(object):
 
         def get(self, values):
             if self.split_idx >= 0:
-                return values[self.step][self.op][self.split_idx][self.index]
+                return values[self.step][self.op].get(self.index, self.split_idx)
             else:
-                return values[self.step][self.op][self.index]
+                return values[self.step][self.op].get(self.index)
 
         def __repr__(self):
             return "[%d:%d]%s" % (
                 self.step, self.index, self.op)
+
+
+    class ComputedResult(object):
+        def __init__(self, batch_size, batched_result):
+            self.batch_size = batch_size
+            self.result = batched_result
+            if isinstance(self.result, tuple):
+                self.result = list(self.result)
+
+        def try_get_batched(self, nodes):
+            all_are_nodes = all(isinstance(n, Fold.Node) for n in nodes)
+            if not all_are_nodes:
+                return None
+            same_split_index = len(set(n.split_idx for n in nodes)) == 1
+            same_step = len(set(n.step for n in nodes)) == 1
+            same_op = len(set(n.op for n in nodes)) == 1
+            indices_are_ordered = all(nodes[i].index < nodes[i + 1].index for i in xrange(len(nodes) - 1))
+            num_nodes_is_equal = len(nodes) == self.batch_size
+            if not (same_split_index and same_step and same_op and indices_are_ordered and num_nodes_is_equal):
+                return None
+
+            if nodes[0].split_idx == -1 and not isinstance(self.result, tuple):
+                return self.result
+            elif nodes[0].split_idx >= 0 and not isinstance(self.result[nodes[0].split_idx], tuple):
+                return self.result[nodes[0].split_idx]
+            else:
+                # This result was already chunked.
+                return None
+
+        def get(self, index, split_idx=-1):
+            if split_idx == -1:
+                if not isinstance(self.result, tuple):
+                    self.result = torch.chunk(self.result, self.batch_size)
+                return self.result[index]
+            else:
+                if not isinstance(self.result[split_idx], tuple):
+                    self.result[split_idx] = torch.chunk(self.result[split_idx], self.batch_size)
+                return self.result[split_idx][index]
+
 
     def __init__(self, volatile=False, cuda=False):
         self.steps = collections.defaultdict(
@@ -74,6 +114,11 @@ class Fold(object):
             r = []
             if isinstance(arg[0], Fold.Node):
                 if arg[0].batch:
+                    batched_arg = values[arg[0].step][arg[0].op].try_get_batched(arg)
+                    if batched_arg is not None:
+                        res.append(batched_arg)
+                        continue
+
                     for x in arg:
                         r.append(x.get(values))
                     res.append(torch.cat(r, 0))
@@ -116,12 +161,7 @@ class Fold(object):
                 else:
                     arg_size = 1
                 res = func(*batched_args)
-                if isinstance(res, (tuple, list)):
-                    values[step][op] = []
-                    for x in res:
-                        values[step][op].append(torch.chunk(x, arg_size))
-                else:
-                    values[step][op] = torch.chunk(res, arg_size)
+                values[step][op] = Fold.ComputedResult(arg_size, res)
         try:
             return self._batch_args(nodes, values)
         except Exception:
