@@ -178,7 +178,7 @@ class Fold(object):
                 first_el = ''
                 for arg in self.steps[step][op][0]:
                     if first_el: first_el += ', '
-                    if isinstance(arg, (torch.Tensor, Variable)):
+                    if isinstance(arg, (torch.tensor._TensorBase, Variable)):
                         first_el += str(arg.size())
                     else:
                         first_el += str(arg)
