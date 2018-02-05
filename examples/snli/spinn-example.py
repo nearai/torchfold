@@ -45,12 +45,13 @@ class SPINN(nn.Module):
 
     def __init__(self, n_classes, size, n_words):
         super(SPINN, self).__init__()
+        self.size = size
         self.tree_lstm = TreeLSTM(size)
         self.embeddings = nn.Embedding(n_words, size)
         self.out = nn.Linear(size, n_classes)
 
     def leaf(self, word_id):
-        return self.embeddings(word_id), Variable(torch.FloatTensor(word_id.size()[0], 100))
+        return self.embeddings(word_id), Variable(torch.FloatTensor(word_id.size()[0], self.size))
 
     def children(self, left_h, left_c, right_h, right_c):
         return self.tree_lstm((left_h, left_c), (right_h, right_c))
@@ -123,21 +124,10 @@ def main():
     train, dev, test = datasets.SNLI.splits(inputs, answers, transitions)
     inputs.build_vocab(train, dev, test)
     answers.build_vocab(train)
-    # print(dir(inputs))
     train_iter, dev_iter, test_iter = data.BucketIterator.splits(
         (train, dev, test), batch_size=args.batch_size, device=0 if args.cuda else -1)
-    # for batch in train_iter:
-    #     # print(dir(batch))
-    #     # print(batch.dataset)
-    #     # print(batch.label)
-    #     # print(batch.premise_transitions)
-    #     for x in batch.dataset:
-    #         print(Tree(x, inputs.vocab, answers.vocab).root)
-    #         # print(dir(x))
-    #         # print(x.label, x.premise, x.premise_transitions)
-    #     break
 
-    model = SPINN(3, 100, 1000)
+    model = SPINN(3, 500, 1000)
     criterion = nn.CrossEntropyLoss()
     opt = optim.Adam(model.parameters(), lr=0.01)
 
