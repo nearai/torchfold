@@ -57,7 +57,7 @@ class Fold(object):
                 and nodes[i].split_idx == nodes[i + 1].split_idx  # Same split index
                 and nodes[i].step == nodes[i + 1].step  # Same step
                 and nodes[i].op == nodes[i + 1].op  # Same op
-                for i in xrange(len(nodes) - 1))
+                for i in range(len(nodes) - 1))
             if not valid_node_sequence:
                 return None
 
