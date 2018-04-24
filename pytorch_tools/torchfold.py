@@ -125,7 +125,9 @@ class Fold(object):
                             torch.cat([arg_item.get(values)
                                        for arg_item in arg], 0))
                 else:
-                    assert all(arg[0] == arg_item for arg_item in arg[1:])
+                    for arg_item in arg[1:]:
+                        if arg_item != arg[0]:
+                            raise ValueError("Can not use more then one of nobatch argument, got: %s." % str(arg_item))
                     res.append(arg[0].get(values))
             elif all(isinstance(arg_item, int) for arg_item in arg):
                 if self._cuda:
@@ -144,7 +146,7 @@ class Fold(object):
                         Variable)):
                         r.append(arg_item)
                     else:
-                        raise Exception(
+                        raise ValueError(
                             'Not allowed to mix Fold.Node/Tensor with int')
                 res.append(torch.cat(r, 0))
         return res
