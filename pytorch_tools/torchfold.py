@@ -111,34 +111,44 @@ class Fold(object):
         res = []
         for arg in arg_lists:
             r = []
-            if isinstance(arg[0], Fold.Node):
+            if all(isinstance(arg_item, Fold.Node) for arg_item in arg):
+                assert all(arg[0].batch == arg_item.batch
+                           for arg_item in arg[1:])
+
                 if arg[0].batch:
-                    batched_arg = values[arg[0].step][arg[0].op].try_get_batched(arg)
+                    batched_arg = values[arg[0].step][arg[0]
+                                                      .op].try_get_batched(arg)
                     if batched_arg is not None:
                         res.append(batched_arg)
-                        continue
-
-                    for x in arg:
-                        r.append(x.get(values))
-                    res.append(torch.cat(r, 0))
-                else:
-                    for i in range(2, len(arg)):
-                        if arg[i] != arg[0]:
-                            raise ValueError("Can not use more then one of nobatch argument, got: %s." % str(arg))
-                    x = arg[0]
-                    res.append(x.get(values))
-            elif isinstance(arg[0], (torch.tensor._TensorBase, Variable)):
-                res.append(torch.cat(arg, 0))
-            else:
-                try:
-                    if self._cuda:
-                        var = Variable(torch.cuda.LongTensor(arg), volatile=self.volatile)
                     else:
-                        var = Variable(torch.LongTensor(arg), volatile=self.volatile)
-                    res.append(var)
-                except:
-                    print("Constructing LongTensor from %s" % str(arg))
-                    raise
+                        res.append(
+                            torch.cat([arg_item.get(values)
+                                       for arg_item in arg], 0))
+                else:
+                    for arg_item in arg[1:]:
+                        if arg_item != arg[0]:
+                            raise ValueError("Can not use more then one of nobatch argument, got: %s." % str(arg_item))
+                    res.append(arg[0].get(values))
+            elif all(isinstance(arg_item, int) for arg_item in arg):
+                if self._cuda:
+                    var = Variable(
+                        torch.cuda.LongTensor(arg), volatile=self.volatile)
+                else:
+                    var = Variable(
+                        torch.LongTensor(arg), volatile=self.volatile)
+                res.append(var)
+            else:
+                for arg_item in arg:
+                    if isinstance(arg_item, Fold.Node):
+                        assert arg_item.batch
+                        r.append(arg_item.get(values))
+                    elif isinstance(arg_item, (torch.tensor._TensorBase,
+                        Variable)):
+                        r.append(arg_item)
+                    else:
+                        raise ValueError(
+                            'Not allowed to mix Fold.Node/Tensor with int')
+                res.append(torch.cat(r, 0))
         return res
 
     def apply(self, nn, nodes):
