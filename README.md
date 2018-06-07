@@ -1,13 +1,18 @@
-# pytorch-tools
-Tools for PyTorch
+# TorchFold
 
-## Torch Fold
+Blog post: http://near.ai/articles/2017-09-06-PyTorch-Dynamic-Batching/
 
 Analogous to [TensorFlow Fold](https://github.com/tensorflow/fold), implements dynamic batching with super simple interface.
 Replace every direct call in your computation to nn module with `f.add('function name', arguments)`.
-It will construct an optimized version of computation and on `f.apply` will dynmically batch and execute the computation on given nn module.
+It will construct an optimized version of computation and on `f.apply` will dynamically batch and execute the computation on given nn module.
 
-For example:
+## Installation
+We recommend using pip package manager:
+```
+pip install torchfold
+```
+
+## Example
 
 ```
     f = torchfold.Fold()
@@ -35,9 +40,3 @@ For example:
     model = Model(...)
     f.apply(model, [[res]])
 ```
-
-## Embeddings
-
-Many times you find yourself with new words in vocabulary as you are working on your model.
-Instead of re-training you can use `embeddings.expand_embeddings` to expand them on the fly with given vocabulary.
-

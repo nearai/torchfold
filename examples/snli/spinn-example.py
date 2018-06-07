@@ -8,12 +8,11 @@ import torch
 from torch.autograd import Variable
 import torch.nn as nn
 from torch import optim
-import torch.nn.functional as F
 
 from torchtext import data
 from torchtext import datasets
 
-from pytorch_tools import torchfold
+import torchfold
 
 
 parser = argparse.ArgumentParser(description='SPINN')
@@ -96,7 +95,6 @@ class Tree(object):
 
         def __repr__(self):
             return str(self.id) if self.is_leaf() else "(%s, %s)" % (self.left, self.right)
-
 
     def __init__(self, example, inputs_vocab, answer_vocab):
         self.label = answer_vocab.stoi[example.label] - 1

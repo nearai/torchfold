@@ -2,9 +2,6 @@ import collections
 
 import torch
 from torch.autograd import Variable
-import torch.nn as nn
-from torch import optim
-import torch.nn.functional as F
 
 
 class Fold(object):
@@ -37,7 +34,6 @@ class Fold(object):
         def __repr__(self):
             return "[%d:%d]%s" % (
                 self.step, self.index, self.op)
-
 
     class ComputedResult(object):
         def __init__(self, batch_size, batched_result):
@@ -79,7 +75,6 @@ class Fold(object):
                     self.result[split_idx] = torch.chunk(self.result[split_idx], self.batch_size)
                 return self.result[split_idx][index]
 
-
     def __init__(self, volatile=False, cuda=False):
         self.steps = collections.defaultdict(
             lambda: collections.defaultdict(list))
@@ -96,7 +91,7 @@ class Fold(object):
         """Add op to the fold."""
         self.total_nodes += 1
         if not all([isinstance(arg, (
-            Fold.Node, int, torch.tensor._TensorBase, Variable)) for arg in args]):
+                Fold.Node, int, torch.tensor._TensorBase, Variable)) for arg in args]):
             raise ValueError(
                 "All args should be Tensor, Variable, int or Node, got: %s" % str(args))
         if args not in self.cached_nodes[op]:
@@ -116,8 +111,7 @@ class Fold(object):
                            for arg_item in arg[1:])
 
                 if arg[0].batch:
-                    batched_arg = values[arg[0].step][arg[0]
-                                                      .op].try_get_batched(arg)
+                    batched_arg = values[arg[0].step][arg[0].op].try_get_batched(arg)
                     if batched_arg is not None:
                         res.append(batched_arg)
                     else:
@@ -142,8 +136,7 @@ class Fold(object):
                     if isinstance(arg_item, Fold.Node):
                         assert arg_item.batch
                         r.append(arg_item.get(values))
-                    elif isinstance(arg_item, (torch.tensor._TensorBase,
-                        Variable)):
+                    elif isinstance(arg_item, (torch.tensor._TensorBase, Variable)):
                         r.append(arg_item)
                     else:
                         raise ValueError(
