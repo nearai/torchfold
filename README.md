@@ -1,3 +1,4 @@
+[![PyPi version](https://pypip.in/v/torchfold/badge.png)](https://pypi.org/project/torchfold/)
 # TorchFold
 
 Blog post: http://near.ai/articles/2017-09-06-PyTorch-Dynamic-Batching/
