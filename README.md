@@ -1,3 +1,5 @@
+<img src="logo.jpg" width=30% align="right" />
+
 [![PyPi version](https://pypip.in/v/torchfold/badge.png)](https://pypi.org/project/torchfold/) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1299387.svg)](https://doi.org/10.5281/zenodo.1299387)
 # TorchFold
 
